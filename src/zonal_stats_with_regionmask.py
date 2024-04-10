@@ -1,3 +1,5 @@
+
+import regionmask
 # This function gets a netcdf file, a geopandas dataframe and the zonal variable(s)
 # and returns a pandas dataframe of the zonal statistics over the polygons
 # in the geopandas
@@ -19,13 +21,17 @@ def mask_with_regionMask(the_xrDataset, the_map, id_column, the_crs="EPSG:4326",
     the_xrDataset = the_xrDataset.where(the_mask)
     return(the_xrDataset)
 
+
 def zonal_stat(the_xrDataset, the_map, id_column, the_crs="EPSG:4326", 
-                         longitude_name='lon', latitude_name= 'lat', func='mean'):
+               longitude_name='lon', latitude_name='lat', func='mean'):
     xr_masked = mask_with_regionMask(the_xrDataset, the_map, id_column, the_crs, 
-                         longitude_name=longitude_name, latitude_name= latitude_name)
-    # TODO: The following line needs to be generalized. for the 'max' function, also the names
-    xr_agg = xr_masked.groupby('time').max(['lat', 'lon'])
+                                     longitude_name=longitude_name, latitude_name=latitude_name)
+    
+    # Use getattr to dynamically call the aggregation function based on the func argument
+    xr_agg = xr_masked.groupby('time').apply(lambda x: getattr(x, func)(dim=['lat', 'lon']))
+    
     xr_df = xr_agg.to_dataframe().reset_index()
 
     return xr_df
+
 
